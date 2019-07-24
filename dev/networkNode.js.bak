@@ -26,7 +26,7 @@ app.get('/blockchain', function (req, res) {
 app.post('/transaction', function (req, res) {
   const newTransaction = req.body;
 	const blockIndex = energy.addTransactionToPendingTransactions(newTransaction);
-	res.json({ note: 'Transaction will be added in block '+blockIndex+'.'});
+	res.json({ note: 'Transaction will be added when block will be mined' });
 });
 
 
@@ -67,7 +67,6 @@ app.get('/mine', function (req, res) {
   const nonce = energy.remining(previousBlockHash,currentBlockData);
   const currentBlockHash=energy.hashBlock(previousBlockHash,currentBlockData,nonce)
 
-  //energy.createNewTransactions(12 ,'00',nodeAddress);
   const newBlock = energy.createNewBlock(nonce,previousBlockHash,currentBlockHash); 
 
 	const requestPromises = [];
@@ -88,7 +87,7 @@ app.get('/mine', function (req, res) {
 			uri: energy.currentNodeUrl + '/transaction/broadcast',
 			method: 'POST',
 			body: {
-				amount: 12.5,
+				amount: 10,
 				sender: "00",
 				recipient: nodeAddress
 			},
@@ -101,6 +100,7 @@ app.get('/mine', function (req, res) {
 		res.json({
 			note: "New block mined & broadcast successfully",
 			block: newBlock
+
 		});
 	});
 });
@@ -108,14 +108,17 @@ app.get('/mine', function (req, res) {
 
 // receive new block
 app.post('/receiveNewBlock', function(req, res) {
+	console.log("Inside receiveNewBlock")
 	const newBlock = req.body.newBlock;
 	const lastBlock = energy.getLastBlock();
-	const correctHash = lastBlock.hash === newBlock.previousBlockHash; 
+	const correctHash = lastBlock.hash === newBlock.prevBlockHash; 
 	const correctIndex = lastBlock['index'] + 1 === newBlock['index'];
 
 	if (correctHash && correctIndex) {
+		console.log("receiveNewBlock--Hash,Index True")
 		energy.chain.push(newBlock);
 		energy.pendingTransactions = [];
+		console.log('New block received and accepted');
 		res.json({
 			note: 'New block received and accepted.',
 			newBlock: newBlock
