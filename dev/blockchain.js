@@ -6,7 +6,7 @@ const currentNodeUrl=process.argv[3];
 //Constructor
 function Blockchain(){
 	this.chain=[]; //All of the blocks we mine will be stored in this array
-	this.pendingTransactions=[]; //All of new created transcations are stored here before thay are mined and stored in blocks
+	this.pendingTransactions=[]; //All of new created transactions are stored here before thay are mined and stored in blocks
 	this.currentNodeUrl =currentNodeUrl;//Node to be aware of which URL it is hosted on
 	this.networkNodes =[];//Array to store info for a blockchain's node to be aware of all other nodes inside the network
 	this.createNewBlock(5,'5FECEB66FFC86F38D952786C6D696C79C2DBC239DD4E91B46729D73A27FB57E9','1A6562590EF19D1045D06C4055742D38288E9E6DCD71CCDE5CEE80F1D5A774ES');//Genesis Block
@@ -17,7 +17,7 @@ Blockchain.prototype.createNewBlock=function(nonce,prevBlockHash,hash){
 	const newBlock = {
 		index : this.chain.length + 1,
 		timestamp : Date.now(),
-		transcations : this.pendingTransactions,
+		transactions : this.pendingTransactions,
 		nonce: nonce,
 		hash : hash,
 		prevBlockHash : prevBlockHash
@@ -30,7 +30,7 @@ Blockchain.prototype.createNewBlock=function(nonce,prevBlockHash,hash){
 
 }
 
-/*Creation on new transcation,but these transcations are not recorded in Blockchain---pending transcations
+/*Creation on new transcation,but these transactions are not recorded in Blockchain---pending transactions
 returns the number of block the pending transaction once verified, will be added to: after a new block is created
 */
 Blockchain.prototype.createNewTransaction = function(amount, sender, recipient) {
@@ -72,6 +72,39 @@ Blockchain.prototype.remining = function(previousBlockHash, currentBlockData) {
 	return nonce;
 };
 
+/*Part of consensus algorithm: it takes a blockchain as an argument and return whether the chain is valid or not.
+It validates other chains present inside the network while we compare them to chain of current node.
+To validate the legitimacy of a blockchain, we iterate over every block in blockchain and make sure that all hashes align up correctly.
+We check that for every block inside the blockchain the prevBlockHash === Hash of the block before that block
+*/
+Blockchain.prototype.chainIsValid = function(blockchain) {
+	var validChain=true;
+	for(var i=1;i<blockchain.length;i++){
+		const currentBlock=blockchain[i];
+		const prevBlock=blockchain[i-1];
+		if (currentBlock['prevBlockHash']!== prevBlock['hash']) //invalid chain		
+			validChain=false;
+
+		//validate whether current's block data is valid,ie, by rehashing every single block and check it has '0000' initially
+		const blockHash = this.hashBlock(prevBlock['hash'], { transactions: currentBlock['transactions'], index: currentBlock['index'] }, currentBlock['nonce']);
+		if (blockHash.substring(0, 4) !== '0000') 
+			validChain = false;
+		
+	}
+	
+	//Check for block 0---genesis block
+	const genesisBlock = blockchain[0];
+	const correctNonce = genesisBlock['nonce'] === 5;
+	const correctPreviousBlockHash = genesisBlock['prevBlockHash'] === '5FECEB66FFC86F38D952786C6D696C79C2DBC239DD4E91B46729D73A27FB57E9';
+	const correctHash = genesisBlock['hash'] === '1A6562590EF19D1045D06C4055742D38288E9E6DCD71CCDE5CEE80F1D5A774ES';
+	const correctTransactions = genesisBlock['transactions'].length === 0;
+	
+	if (!correctNonce || !correctPreviousBlockHash || !correctHash || !correctTransactions) 
+		validChain = false;
+
+	
+	return validChain;
+};
 
 
 //To get the last block insterted into Blockchain

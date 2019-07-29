@@ -184,6 +184,60 @@ app.post('/registerBulkNode', function (req, res) {
 	res.json({ note: 'Bulk registration successful.' });
 });
 
+/* Consensus endpoint---uses isValidChain() method
+Make a request to every other node inside of our blockchain network to retrieve their chain datastructure(array).
+Then compare those arrays with the chain of the current blockchain which is hosted on the node through which we send request for consensus
+*/
+app.get('/consensus', function(req, res) {
+	const requestPromises = [];
+	energy.networkNodes.forEach(networkNodeUrl => {
+		const requestOptions = {
+			uri: networkNodeUrl + '/blockchain',
+			method: 'GET',
+			json: true
+		};
+
+		requestPromises.push(rp(requestOptions));
+	});
+
+/*We iterate through all the blockchains coming from other nodes inside of our network to verify if there exist a blockchain which is longer
+than the copy of blockchain ledger(chain) hosted on current node
+*/
+	Promise.all(requestPromises)
+	.then(blockchains => {
+		const currentChainLength = energy.chain.length;
+		let maxChainLength = currentChainLength;
+		let newLongestChain = null;
+		let newPendingTransactions = null;
+
+//Reset variable with info about longest chain variables
+		blockchains.forEach(blockchain => {
+			if (blockchain.chain.length > maxChainLength) {
+				maxChainLength = blockchain.chain.length;
+				newLongestChain = blockchain.chain;
+				newPendingTransactions = blockchain.pendingTransactions;
+			};
+		});
+
+//If there is no new longest chain or if there is a new longest chain but that chain is invalid then no replacement
+		if (!newLongestChain || (newLongestChain && !energy.chainIsValid(newLongestChain))) {
+			res.json({
+				note: 'Current chain has not been replaced.',
+				chain: energy.chain
+			});
+		}
+		//Replace with Longest chain rule algo. for consensus inside the network
+		else {
+			energy.chain = newLongestChain;
+			energy.pendingTransactions = newPendingTransactions;
+			res.json({
+				note: 'This chain has been replaced.',
+				chain: energy.chain
+			});
+		}
+	});
+});
+
 
 app.listen(port, function() {
 	console.log('Listening on port '+port+' ...');
