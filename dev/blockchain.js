@@ -113,5 +113,65 @@ Blockchain.prototype.getLastBlock = function(){
 		return this.chain[idx];
 }
 
+//Inside this method we will iterate through our entire blockchain and search for the block corresponding to this blockHash
+Blockchain.prototype.getBlock = function(blockHash) {
+	var correctBlock = null;
+	this.chain.forEach(block => {
+		if (block.hash === blockHash) correctBlock = block;
+	});
+	return correctBlock;
+};
+
+/*Get specific transaction by passing in the transactionID. Inside this method we will iterate through our entire blockchain 
+and search for a particular transaction. Then for each block's transaction we iterate over and find for the matching transcationId which correpons to requested transcation details
+if there is no transaction corresponding to transactionID we get both block and transcation as null
+*/
+Blockchain.prototype.getTransaction = function(transactionId) {
+	var correctTransaction = null;
+	var correctBlock = null;
+
+	this.chain.forEach(block => {
+		block.transactions.forEach(transaction => {
+			if (transaction.transactionId === transactionId) {
+				correctTransaction = transaction;
+				correctBlock = block;
+			};
+		});
+	});
+
+	return {
+		transaction: correctTransaction,
+		block: correctBlock
+	};
+};
+
+/*
+To get data/transactions associated with an address this method takes address as an argument. All the data retrieved will be put in an array and send to the user
+We iterate through all the transactions inside our blockchain and any of them if have this adress as sender or recipient will then be put in the array.
+For each transcation put in array we calculate what amount of energy user send or received to know his energy reservoir on that address
+the balance amount is also sent along transaction array.
+*/
+Blockchain.prototype.getAddressData = function(address) {
+	const addressTransactions = [];
+	this.chain.forEach(block => {
+		block.transactions.forEach(transaction => {
+			if(transaction.sender === address || transaction.recipient === address) {
+				addressTransactions.push(transaction);
+			};
+		});
+	});
+
+	var balance = 0;
+	addressTransactions.forEach(transaction => {
+		if (transaction.recipient === address) balance += transaction.amount;
+		else if (transaction.sender === address) balance -= transaction.amount;
+	});
+
+	return {
+		addressTransactions: addressTransactions,
+		addressBalance: balance
+	};
+};
+
 //To export the Blockchain constructor function to be used in other js files
 module.exports=Blockchain;

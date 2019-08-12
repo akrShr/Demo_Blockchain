@@ -238,6 +238,54 @@ than the copy of blockchain ledger(chain) hosted on current node
 	});
 });
 
+/* Block Explorer :- get block by searching blockHash
+We will send a particular block hash and this endpoint will return us the correponding block.
+We get block hash as part of the url so we get that using req.params which we save in variable blockHash
+If null is returned as a response we know that no either hash is incorrect as no block corresponds to this hash 
+*/
+app.get('/block/:blockHash', function(req, res) { 
+	const blockHash = req.params.blockHash;
+	const correctBlock = energy.getBlock(blockHash);
+	res.json({
+		block: correctBlock
+	});
+});
+
+
+/* Block Explorer :- get information about a transaction by search using transaction Id
+We will send in the transactionID as request and in response we get the correct transaction corresponding to the ID
+*/
+app.get('/transaction/:transactionId', function(req, res) {
+	const transactionId = req.params.transactionId;
+	const trasactionData = energy.getTransaction(transactionId);
+	res.json({
+		transaction: trasactionData.transaction,
+		block: trasactionData.block
+	});
+});
+
+/* Block Explorer :- get information for a specific address that we are searching for.
+We will send in specific address in request and in response we will get all transcations that have been made 
+corresponding to that address.
+Plus we will get the balance of energy reservoir for this address too.
+*/
+app.get('/address/:address', function(req, res) {
+	const address = req.params.address;
+	const addressData = energy.getAddressData(address);
+	res.json({
+		addressData: addressData
+	});
+});
+
+
+/* block explorer-- endpoint. 
+This method will retrieve webpage of blockexplorer(index.html)
+sendFile sends the whole file from current directory
+*/
+app.get('/block-explorer', function(req, res) {
+	res.sendFile('./BlockExplorer/index.html', { root: __dirname });
+});
+
 
 app.listen(port, function() {
 	console.log('Listening on port '+port+' ...');

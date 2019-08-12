@@ -1,0 +1,1 @@
+This Block Explorer:- User Interface to search for a specific block, a specific transaction or a specific address and displaying the search results.
